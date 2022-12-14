@@ -191,7 +191,7 @@ def info_nce_loss(self, features):
 
 **Explore above codes from the perspective of matrix operations,**
 
-![Untitled](fig/Untitled.png)
+![Untitled](./fig/Untitled.png)
 
 ---
 
@@ -244,7 +244,7 @@ def triplet_loss(self, features, margin):
 
 **Explain above codes from the perspective of matrix operations,**
 
-![Untitled](fig/Untitled%201.png)
+![Untitled](./fig/Untitled%201.png)
 
 ---
 
