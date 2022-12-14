@@ -54,6 +54,44 @@ class SimCLR(object):
         logits = logits / self.args.temperature
         return logits, labels
 
+    def triplet_loss(self, features, margin):
+        labels = torch.cat([torch.arange(self.args.batch_size) for i in range(self.args.n_views)], dim=0)
+        labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).float()
+        labels = labels.to(self.args.device)
+
+        features = F.normalize(features, dim=1)
+
+        similarity_matrix = torch.matmul(features, features.T)
+
+        mask = torch.eye(labels.shape[0], dtype=torch.bool).to(self.args.device)
+        labels = labels[~mask].view(labels.shape[0], -1)
+        similarity_matrix = similarity_matrix[~mask].view(similarity_matrix.shape[0], -1)
+
+        positives = similarity_matrix[labels.bool()].view(labels.shape[0], -1)
+
+        negatives = similarity_matrix[~labels.bool()].view(similarity_matrix.shape[0], -1)
+
+        # sorting the tensor in  descending order along the row
+        neg_sorted, indices = torch.sort(negatives, dim = 1, descending=True)
+        neg_top5 = neg_sorted[:, 0:5]
+
+#        print("POSITIVE MATRIX SHAPE: ", positives.shape)
+#        print("NEGATIVE MATRIX SHAPE: ", negatives.shape)
+#        print("TOP5 NEGATIVE MATRIX SHAPE: ", neg_top5.shape)
+
+        triplet = positives - neg_top5 + margin
+#        print("TRIPLET SHAPE: ", triplet.shape)
+
+        # easy triplets have negative loss values
+        triplet = F.relu(triplet)
+
+        # Compute scalar loss value by averaging positive losses
+        eps = 1e-8
+        num_positive_losses = (triplet > eps).float().sum()
+        triplet = triplet.sum() / (num_positive_losses + eps)
+
+        return triplet    
+    
     def train(self, train_loader):
 
         scaler = GradScaler(enabled=self.args.fp16_precision)
@@ -75,6 +113,7 @@ class SimCLR(object):
                     features = self.model(images)
                     logits, labels = self.info_nce_loss(features)
                     loss = self.criterion(logits, labels)
+                    # loss = self.triplet_loss(features, 1.0)
 
                 self.optimizer.zero_grad()
 
