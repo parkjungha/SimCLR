@@ -47,8 +47,13 @@ class SimCLR(object):
 
         # select only the negatives the negatives
         negatives = similarity_matrix[~labels.bool()].view(similarity_matrix.shape[0], -1)
-
-        logits = torch.cat([positives, negatives], dim=1)
+        
+        # @@@ADDED@@@ sorting the tensor in  descending order along the row
+        neg_sorted, indices = torch.sort(negatives, dim = 1, descending=True)
+        # @@@ADDED@@@ only select top 5 columns
+        neg_top5 = neg_sorted[:, 0:5]
+        
+        logits = torch.cat([positives, neg_top5], dim=1) # @@@MODIFIED@@@ negatives -> neg_top5
         labels = torch.zeros(logits.shape[0], dtype=torch.long).to(self.args.device)
 
         logits = logits / self.args.temperature
@@ -75,12 +80,7 @@ class SimCLR(object):
         neg_sorted, indices = torch.sort(negatives, dim = 1, descending=True)
         neg_top5 = neg_sorted[:, 0:5]
 
-#        print("POSITIVE MATRIX SHAPE: ", positives.shape)
-#        print("NEGATIVE MATRIX SHAPE: ", negatives.shape)
-#        print("TOP5 NEGATIVE MATRIX SHAPE: ", neg_top5.shape)
-
         triplet = positives - neg_top5 + margin
-#        print("TRIPLET SHAPE: ", triplet.shape)
 
         # easy triplets have negative loss values
         triplet = F.relu(triplet)
