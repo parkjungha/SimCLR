@@ -195,56 +195,17 @@ def info_nce_loss(self, features):
 
 ---
 
-**Triplet Loss Implementation**
+**Modification in Loss calculation**
 
 ```python
-def triplet_loss(self, features, margin):
-  """Uses all valid triplets to compute Triplet loss
+negatives = similarity_matrix[~labels.bool()].view(similarity_matrix.shape[0], -1)
+# sorting the tensor in  descending order along the row
+neg_sorted, indices = torch.sort(negatives, dim = 1, descending=True)
+# select only top5 columns
+neg_topk = neg_sorted[:, 0:5]
+logits = torch.cat([positives, neg_topk], dim=1)
 
-  Args:
-    margin: Margin value in the Triplet Loss equation
-
-  Returns:
-    Scalar loss value.
-  """
-        labels = torch.cat([torch.arange(self.args.batch_size) for i in range(self.args.n_views)], dim=0)
-        labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).float()
-        labels = labels.to(self.args.device)
-			
-        features = F.normalize(features, dim=1)
-
-				# step 1 - get distance matrix
-        similarity_matrix = torch.matmul(features, features.T)
-
-        mask = torch.eye(labels.shape[0], dtype=torch.bool).to(self.args.device)
-        labels = labels[~mask].view(labels.shape[0], -1)
-        similarity_matrix = similarity_matrix[~mask].view(similarity_matrix.shape[0], -1)
-
-        positives = similarity_matrix[labels.bool()].view(labels.shape[0], -1)
-
-        negatives = similarity_matrix[~labels.bool()].view(similarity_matrix.shape[0], -1)
-
-        # sorting the tensor in  descending order along the row
-        neg_sorted, indices = torch.sort(negatives, dim = 1, descending=True)
-				# select only top5 columns
-        neg_top5 = neg_sorted[:, 0:5]
-
-        triplet = positives - neg_top5 + margin
-
-        # easy triplets have negative loss values
-        triplet = F.relu(triplet)
-
-        # Compute scalar loss value by averaging positive losses
-        eps = 1e-8
-        num_positive_losses = (triplet > eps).float().sum()
-        triplet = triplet.sum() / (num_positive_losses + eps)
-
-				return triplet
 ```
-
-**Explain above codes from the perspective of matrix operations,**
-
-![Untitled](./Untitled%201.png)
 
 ---
 
