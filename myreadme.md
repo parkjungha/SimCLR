@@ -221,7 +221,8 @@ $ python run.py -data ./datasets -dataset-name stl10 --log-every-n-steps 1 --epo
 
 ### Experimental Results
 
-|  | Original Code (Contrasitive Loss) | Triplet Loss |
+|  | Original Code (Contrasitive Loss) | Top 5 negative samples Loss |
 | --- | --- | --- |
-| Loss | 1.9853 | 1.0033 |
-| Top1 Accuracy | 60.7422 | - |
+| Loss | 1.9853 | 1.7917 |
+| Top1 Accuracy | 60.7422 | 61.5993 |
+| Learning Efficiency | ? | ? |
